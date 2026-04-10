@@ -12,6 +12,29 @@ USE ea_coach_dna_calibration;
 -- - Views stay at the play level
 -- - Aggregation happens later in 05_team_profiles.sql
 --   and 06_baselines.sql
+-- - field_zone remains available in every view because each
+--   view selects directly from clean_pbp
+--
+-- Compressed-field scoring area design:
+-- - red_zone:
+--     plus 20 to plus 11
+--     yardline_100 BETWEEN 11 AND 20
+-- - goal_to_go:
+--     plus 10 to plus 3
+--     goal_to_go = 1 AND yardline_100 BETWEEN 3 AND 10
+-- - goal_line:
+--     plus 2 to the end zone
+--     goal_to_go = 1 AND yardline_100 <= 2
+--
+-- Why this matters:
+-- - Coaching behavior changes sharply as field space shrinks
+-- - Plus 20 to plus 11 is still red-zone football, but there
+--   is more space for routes, motion, and play design
+-- - Plus 10 to plus 3 is compressed-field offense where the
+--   playbook tightens and situational intent matters more
+-- - Plus 2 and in is true goal-line football where formation
+--   density, power tendency, and aggressive scoring behavior
+--   become even more distinct
 -- =========================================================
 
 DROP VIEW IF EXISTS
@@ -22,6 +45,7 @@ DROP VIEW IF EXISTS
     vw_sit_short_yardage,
     vw_sit_red_zone,
     vw_sit_goal_to_go,
+    vw_sit_goal_line,
     vw_sit_two_minute_half,
     vw_sit_two_minute_game,
     vw_sit_one_score,
@@ -83,21 +107,38 @@ WHERE ydstogo <= 2;
 
 -- =========================================================
 -- RED ZONE
+-- Definition:
+-- plus 20 to plus 11
 -- =========================================================
 
 CREATE VIEW vw_sit_red_zone AS
 SELECT *
 FROM clean_pbp
-WHERE yardline_100 <= 20;
+WHERE yardline_100 BETWEEN 11 AND 20;
 
 -- =========================================================
 -- GOAL TO GO
+-- Definition:
+-- plus 10 to plus 3
 -- =========================================================
 
 CREATE VIEW vw_sit_goal_to_go AS
 SELECT *
 FROM clean_pbp
-WHERE goal_to_go = 1;
+WHERE goal_to_go = 1
+  AND yardline_100 BETWEEN 3 AND 10;
+
+-- =========================================================
+-- GOAL LINE
+-- Definition:
+-- plus 2 to the end zone
+-- =========================================================
+
+CREATE VIEW vw_sit_goal_line AS
+SELECT *
+FROM clean_pbp
+WHERE goal_to_go = 1
+  AND yardline_100 <= 2;
 
 -- =========================================================
 -- TWO-MINUTE DRILL (HALF)
@@ -131,7 +172,7 @@ WHERE ABS(score_differential) <= 8;
 -- Purpose:
 -- Standard offensive identity lens:
 -- early downs, one-score game, outside final two minutes,
--- outside red zone, non-goal-to-go
+-- outside compressed scoring territory
 -- =========================================================
 
 CREATE VIEW vw_sit_neutral_early_down AS
@@ -140,8 +181,7 @@ FROM clean_pbp
 WHERE down IN (1, 2)
   AND ABS(score_differential) <= 8
   AND game_seconds_remaining > 120
-  AND yardline_100 > 20
-  AND goal_to_go = 0;
+  AND yardline_100 > 20;
 
 -- =========================================================
 -- SCORE STATE: TIED / LEADING / TRAILING
