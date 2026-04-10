@@ -10,6 +10,7 @@ from config import (
     OUTPUT_TABLES_DIR,
     PROCESSED_DATA_DIR,
     PROFILE_SEASON,
+    SUMMARY_SCORE_DISPLAY_DECIMALS,
     ensure_output_dirs,
 )
 
@@ -57,12 +58,14 @@ SAMPLE_MULTIPLIER_MAP: Dict[str, float] = {
     "very_thin": 0.50,
 }
 
-# Use a non-overlapping core set for overall team scoring
+# Core weighted situations for overall team scoring.
+# All field-zone rows for these situations are included.
 CORE_SITUATION_WEIGHTS: Dict[str, float] = {
     "neutral_early_down": 1.50,
     "third_down": 1.25,
-    "red_zone": 1.20,
-    "goal_to_go": 1.00,
+    "red_zone": 1.15,
+    "goal_to_go": 1.10,
+    "goal_line": 1.20,
     "short_yardage": 1.00,
     "fourth_down": 0.90,
     "two_minute_half": 0.85,
@@ -74,12 +77,14 @@ CORE_SITUATION_WEIGHTS: Dict[str, float] = {
     "trailing_one_score": 0.75,
 }
 
+RANK_GROUP_COLS: List[str] = ["situation_name", "field_zone"]
+
 
 # =========================================================
 # HELPERS
 # =========================================================
 
-def rank_within_situation(
+def rank_within_context(
     df: pd.DataFrame,
     value_col: str,
     *,
@@ -87,7 +92,8 @@ def rank_within_situation(
     higher_is_better: bool = True,
 ) -> pd.Series:
     """
-    Convert a delta metric into a 0-100 percentile-style score within each situation.
+    Convert a delta metric into a 0-100 percentile-style score
+    within each situation + field_zone context.
     """
     values = df[value_col].abs() if use_abs else df[value_col]
 
@@ -97,7 +103,8 @@ def rank_within_situation(
             working = -working
         return working.rank(pct=True, method="average") * 100
 
-    return values.groupby(df["situation_name"]).transform(_rank)
+    group_keys = [df[col] for col in RANK_GROUP_COLS]
+    return values.groupby(group_keys).transform(_rank)
 
 
 def weighted_average(values: pd.Series, weights: pd.Series) -> float:
@@ -117,13 +124,30 @@ def weighted_average(values: pd.Series, weights: pd.Series) -> float:
     return float(np.average(v, weights=w))
 
 
+def round_score(value: float) -> float:
+    """
+    Standard rounding helper for exported score fields.
+    """
+    if pd.isna(value):
+        return np.nan
+    return round(float(value), SUMMARY_SCORE_DISPLAY_DECIMALS)
+
+
+def build_context_label(situation_name: str, field_zone: str) -> str:
+    """
+    Build a compact context label for summaries.
+    """
+    return f"{situation_name} | {field_zone}"
+
+
 # =========================================================
 # SITUATION-LEVEL SCORING
 # =========================================================
 
 def build_situation_scores() -> pd.DataFrame:
     """
-    Build team-by-situation Coach DNA scores from the feature table.
+    Build team-by-situation-by-field-zone Coach DNA scores
+    from the feature table.
     """
     df = build_team_baseline_features().copy()
 
@@ -134,7 +158,7 @@ def build_situation_scores() -> pd.DataFrame:
     tendency_score_cols = []
     for metric in TENDENCY_METRICS:
         score_col = metric.replace("_delta", "_signal_score")
-        df[score_col] = rank_within_situation(
+        df[score_col] = rank_within_context(
             df,
             metric,
             use_abs=True,
@@ -151,7 +175,7 @@ def build_situation_scores() -> pd.DataFrame:
     efficiency_score_cols = []
     for metric in EFFICIENCY_METRICS:
         score_col = metric.replace("_delta", "_score")
-        df[score_col] = rank_within_situation(
+        df[score_col] = rank_within_context(
             df,
             metric,
             use_abs=False,
@@ -168,7 +192,7 @@ def build_situation_scores() -> pd.DataFrame:
     explosive_score_cols = []
     for metric in EXPLOSIVE_METRICS:
         score_col = metric.replace("_delta", "_score")
-        df[score_col] = rank_within_situation(
+        df[score_col] = rank_within_context(
             df,
             metric,
             use_abs=False,
@@ -185,7 +209,7 @@ def build_situation_scores() -> pd.DataFrame:
     stability_score_cols = []
     for metric in STABILITY_METRICS:
         score_col = metric.replace("_delta", "_score")
-        df[score_col] = rank_within_situation(
+        df[score_col] = rank_within_context(
             df,
             metric,
             use_abs=False,
@@ -198,12 +222,15 @@ def build_situation_scores() -> pd.DataFrame:
     # -----------------------------------------------------
     # Sample reliability
     # -----------------------------------------------------
-    df["sample_reliability_score"] = df["team_sample_quality"].map(SAMPLE_SCORE_MAP).fillna(30.0)
-    df["sample_multiplier"] = df["team_sample_quality"].map(SAMPLE_MULTIPLIER_MAP).fillna(0.50)
+    df["sample_reliability_score"] = (
+        df["team_sample_quality"].map(SAMPLE_SCORE_MAP).fillna(30.0)
+    )
+    df["sample_multiplier"] = (
+        df["team_sample_quality"].map(SAMPLE_MULTIPLIER_MAP).fillna(0.50)
+    )
 
     # -----------------------------------------------------
-    # Overall Coach DNA scores
-    # Bias toward distinctiveness + real effectiveness
+    # Overall situation-level Coach DNA score
     # -----------------------------------------------------
     df["coach_dna_score_raw"] = (
         0.45 * df["tendency_signal_score"]
@@ -213,7 +240,9 @@ def build_situation_scores() -> pd.DataFrame:
         + 0.05 * df["sample_reliability_score"]
     )
 
-    df["coach_dna_score_adjusted"] = df["coach_dna_score_raw"] * df["sample_multiplier"]
+    df["coach_dna_score_adjusted"] = (
+        df["coach_dna_score_raw"] * df["sample_multiplier"]
+    )
 
     # -----------------------------------------------------
     # Useful labels
@@ -266,11 +295,19 @@ def build_situation_scores() -> pd.DataFrame:
         default="close_to_baseline_efficiency",
     )
 
+    df["situation_field_zone_context"] = df.apply(
+        lambda row: build_context_label(row["situation_name"], row["field_zone"]),
+        axis=1,
+    )
+
     ordered_cols = [
         "profile_season",
         "team",
         "situation_order",
         "situation_name",
+        "field_zone_order",
+        "field_zone",
+        "situation_field_zone_context",
         "team_play_count",
         "team_sample_quality",
         "sample_vs_baseline_context",
@@ -329,7 +366,9 @@ def build_situation_scores() -> pd.DataFrame:
     )
 
     df = df[ordered_cols + keep_metric_cols + signal_component_cols].copy()
-    df = df.sort_values(["team", "situation_order"]).reset_index(drop=True)
+    df = df.sort_values(
+        ["team", "situation_order", "field_zone_order"]
+    ).reset_index(drop=True)
 
     return df
 
@@ -340,15 +379,19 @@ def build_situation_scores() -> pd.DataFrame:
 
 def build_team_summary_scores(situation_scores: pd.DataFrame) -> pd.DataFrame:
     """
-    Aggregate situation-level scores into one team-level Coach DNA score.
+    Aggregate situation-level scores into one team-level
+    Coach DNA score.
     """
     scoring_df = situation_scores[
         situation_scores["situation_name"].isin(CORE_SITUATION_WEIGHTS.keys())
     ].copy()
 
-    scoring_df["situation_weight"] = scoring_df["situation_name"].map(CORE_SITUATION_WEIGHTS)
+    scoring_df["situation_weight"] = scoring_df["situation_name"].map(
+        CORE_SITUATION_WEIGHTS
+    )
     scoring_df["aggregation_weight"] = (
-        scoring_df["situation_weight"] * np.sqrt(scoring_df["team_play_count"].clip(lower=1))
+        scoring_df["situation_weight"]
+        * np.sqrt(scoring_df["team_play_count"].clip(lower=1))
     )
 
     rows = []
@@ -361,34 +404,69 @@ def build_team_summary_scores(situation_scores: pd.DataFrame) -> pd.DataFrame:
                 "profile_season": PROFILE_SEASON,
                 "team": team,
                 "scored_situations": int(len(grp)),
-                "overall_coach_dna_score": round(
-                    weighted_average(grp["coach_dna_score_adjusted"], grp["aggregation_weight"]), 4
+                "overall_coach_dna_score": round_score(
+                    weighted_average(
+                        grp["coach_dna_score_adjusted"],
+                        grp["aggregation_weight"],
+                    )
                 ),
-                "tendency_signal_score_avg": round(
-                    weighted_average(grp["tendency_signal_score"], grp["aggregation_weight"]), 4
+                "tendency_signal_score_avg": round_score(
+                    weighted_average(
+                        grp["tendency_signal_score"],
+                        grp["aggregation_weight"],
+                    )
                 ),
-                "efficiency_signal_score_avg": round(
-                    weighted_average(grp["efficiency_signal_score"], grp["aggregation_weight"]), 4
+                "efficiency_signal_score_avg": round_score(
+                    weighted_average(
+                        grp["efficiency_signal_score"],
+                        grp["aggregation_weight"],
+                    )
                 ),
-                "explosiveness_signal_score_avg": round(
-                    weighted_average(grp["explosiveness_signal_score"], grp["aggregation_weight"]), 4
+                "explosiveness_signal_score_avg": round_score(
+                    weighted_average(
+                        grp["explosiveness_signal_score"],
+                        grp["aggregation_weight"],
+                    )
                 ),
-                "stability_signal_score_avg": round(
-                    weighted_average(grp["stability_signal_score"], grp["aggregation_weight"]), 4
+                "stability_signal_score_avg": round_score(
+                    weighted_average(
+                        grp["stability_signal_score"],
+                        grp["aggregation_weight"],
+                    )
                 ),
-                "sample_reliability_score_avg": round(
-                    weighted_average(grp["sample_reliability_score"], grp["aggregation_weight"]), 4
+                "sample_reliability_score_avg": round_score(
+                    weighted_average(
+                        grp["sample_reliability_score"],
+                        grp["aggregation_weight"],
+                    )
                 ),
                 "top_signal_situation": grp.loc[top_idx, "situation_name"],
-                "top_signal_score": round(grp.loc[top_idx, "coach_dna_score_adjusted"], 4),
+                "top_signal_field_zone": grp.loc[top_idx, "field_zone"],
+                "top_signal_context": grp.loc[
+                    top_idx, "situation_field_zone_context"
+                ],
+                "top_signal_score": round_score(
+                    grp.loc[top_idx, "coach_dna_score_adjusted"]
+                ),
                 "lowest_signal_situation": grp.loc[low_idx, "situation_name"],
-                "lowest_signal_score": round(grp.loc[low_idx, "coach_dna_score_adjusted"], 4),
+                "lowest_signal_field_zone": grp.loc[low_idx, "field_zone"],
+                "lowest_signal_context": grp.loc[
+                    low_idx, "situation_field_zone_context"
+                ],
+                "lowest_signal_score": round_score(
+                    grp.loc[low_idx, "coach_dna_score_adjusted"]
+                ),
             }
         )
 
-    summary = pd.DataFrame(rows).sort_values(
-        ["overall_coach_dna_score", "team"], ascending=[False, True]
-    ).reset_index(drop=True)
+    summary = (
+        pd.DataFrame(rows)
+        .sort_values(
+            ["overall_coach_dna_score", "team"],
+            ascending=[False, True],
+        )
+        .reset_index(drop=True)
+    )
 
     return summary
 
@@ -406,11 +484,19 @@ def export_scores(
     """
     ensure_output_dirs()
 
-    processed_situation_path = PROCESSED_DATA_DIR / f"coach_dna_situation_scores_{PROFILE_SEASON}.csv"
-    processed_summary_path = PROCESSED_DATA_DIR / f"coach_dna_team_summary_{PROFILE_SEASON}.csv"
+    processed_situation_path = (
+        PROCESSED_DATA_DIR / f"coach_dna_situation_scores_{PROFILE_SEASON}.csv"
+    )
+    processed_summary_path = (
+        PROCESSED_DATA_DIR / f"coach_dna_team_summary_{PROFILE_SEASON}.csv"
+    )
 
-    output_situation_path = OUTPUT_TABLES_DIR / f"coach_dna_situation_scores_{PROFILE_SEASON}.csv"
-    output_summary_path = OUTPUT_TABLES_DIR / f"coach_dna_team_summary_{PROFILE_SEASON}.csv"
+    output_situation_path = (
+        OUTPUT_TABLES_DIR / f"coach_dna_situation_scores_{PROFILE_SEASON}.csv"
+    )
+    output_summary_path = (
+        OUTPUT_TABLES_DIR / f"coach_dna_team_summary_{PROFILE_SEASON}.csv"
+    )
 
     situation_scores.to_csv(processed_situation_path, index=False)
     situation_scores.to_csv(output_situation_path, index=False)
@@ -453,19 +539,22 @@ def smoke_test() -> None:
                 "overall_coach_dna_score",
                 "tendency_signal_score_avg",
                 "efficiency_signal_score_avg",
-                "top_signal_situation",
+                "top_signal_context",
                 "top_signal_score",
             ]
         ].head(10)
     )
 
     print("\nBUF situation sample:")
-    print(
+    buf_sample = (
         situation_scores.loc[
             situation_scores["team"] == "BUF",
             [
                 "team",
+                "situation_order",
                 "situation_name",
+                "field_zone_order",
+                "field_zone",
                 "team_play_count",
                 "coach_dna_score_adjusted",
                 "tendency_signal_score",
@@ -476,8 +565,12 @@ def smoke_test() -> None:
                 "tendency_profile_label",
                 "efficiency_profile_label",
             ],
-        ].head(10)
+        ]
+        .sort_values(["situation_order", "field_zone_order"])
+        .head(12)
+        .drop(columns=["situation_order", "field_zone_order"])
     )
+    print(buf_sample)
 
     export_scores(situation_scores, team_summary)
 

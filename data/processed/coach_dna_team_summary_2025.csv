@@ -1,33 +1,33 @@
-profile_season,team,scored_situations,overall_coach_dna_score,tendency_signal_score_avg,efficiency_signal_score_avg,explosiveness_signal_score_avg,stability_signal_score_avg,sample_reliability_score_avg,top_signal_situation,top_signal_score,lowest_signal_situation,lowest_signal_score
-2025,LA,13,71.4506,62.397,88.1404,70.5575,71.66,96.351,neutral_early_down,83.9844,two_minute_game,34.2305
-2025,BUF,13,70.8384,72.2995,77.7592,70.5647,48.6145,96.083,third_down,79.5703,fourth_down,45.876
-2025,WAS,13,68.2717,80.9874,56.2046,64.8656,45.0901,96.2908,tied_early_down,82.3633,two_minute_game,37.3359
-2025,CIN,13,65.4883,74.2507,65.0623,41.7981,56.2964,97.3112,red_zone,82.0703,fourth_down,51.8379
-2025,BAL,13,61.8666,70.473,54.6368,68.3142,27.7396,95.3569,leading_early_down,70.8594,two_minute_game,22.9512
-2025,CHI,13,61.829,53.5188,66.4914,65.3718,71.8608,97.1988,third_down,78.3203,fourth_down,35.2266
-2025,NE,13,59.1905,48.3904,77.7351,70.7027,36.2316,96.4879,two_minute_half,79.9609,short_yardage,41.5234
-2025,SEA,13,59.0944,58.3097,59.7254,63.4167,45.3474,96.3373,trailing_one_score,76.9531,two_minute_game,15.0264
-2025,GB,13,57.8559,47.3359,67.0709,70.3521,55.6716,96.1749,third_down,83.2422,tied_early_down,25.4297
-2025,SF,13,57.1461,48.3846,72.8378,45.9918,63.2382,96.6462,third_down,66.8945,fourth_down,33.5566
-2025,IND,13,57.0688,46.5839,72.7063,60.7947,50.8118,96.4236,leading_early_down,71.875,two_minute_game,25.0898
-2025,JAX,13,56.2147,48.5309,63.3487,59.6899,59.8171,96.4734,two_minute_half,69.4531,leading_one_score,36.9922
-2025,KC,13,55.9808,65.031,49.098,40.7657,45.5752,96.4377,leading_one_score,73.4375,two_minute_game,29.543
-2025,DET,13,55.4837,46.4967,62.656,59.4687,62.4854,96.2801,two_minute_half,78.9453,goal_to_go,37.2094
-2025,DAL,13,54.1225,40.7323,68.9394,56.7368,60.3083,97.0128,short_yardage,71.0938,goal_to_go,36.1195
-2025,PHI,13,54.083,52.9866,50.8153,53.2405,61.2846,95.4791,red_zone,70.6445,two_minute_game,34.875
-2025,NYG,13,53.4421,58.6391,40.8564,55.8007,46.0568,96.2164,short_yardage,72.8125,goal_to_go,29.6684
-2025,ATL,13,53.4311,43.5695,54.9088,60.6532,72.1618,96.1331,two_minute_half,71.9141,fourth_down,21.4424
-2025,MIA,13,50.5467,44.8315,53.9264,53.0481,50.1229,96.0029,neutral_early_down,72.4609,short_yardage,26.8383
-2025,ARI,13,48.1051,52.9524,39.1654,46.6614,40.1511,95.2341,two_minute_half,62.4023,short_yardage,28.2445
-2025,TB,13,47.7549,39.7434,50.3602,47.1016,58.6862,97.2533,trailing_one_score,58.6719,fourth_down,17.3555
-2025,DEN,13,47.6864,35.8064,51.0149,44.9941,81.6528,96.899,third_down,73.1445,leading_one_score,31.2109
-2025,CAR,13,46.4753,52.4559,35.9621,38.8303,49.9453,93.9939,leading_one_score,59.9219,two_minute_game,31.3154
-2025,NO,13,45.5841,56.9997,28.9181,36.3539,43.044,92.9593,two_minute_game,68.4281,fourth_down,21.2959
-2025,MIN,13,44.1784,47.7545,36.4424,53.4584,20.2193,95.159,red_zone,59.6875,fourth_down,28.166
-2025,HOU,13,44.135,43.8258,30.9634,41.4845,69.7,96.0942,two_minute_half,59.0625,fourth_down,24.7246
-2025,PIT,13,43.8918,33.9831,51.0297,38.7492,61.916,96.633,leading_early_down,58.6133,trailing_early_down,30.1953
-2025,LAC,13,43.2726,44.0018,40.3848,38.7825,36.0798,96.6396,third_down,56.4453,fourth_down,31.6084
-2025,NYJ,13,40.0831,53.3315,21.3194,33.0184,32.5823,91.7325,short_yardage,51.0258,red_zone,17.5
-2025,TEN,13,37.1841,39.6232,24.5221,31.1616,49.55,94.867,tied_early_down,51.0156,trailing_one_score,26.4844
-2025,CLE,13,33.9912,37.3563,17.5156,28.6021,45.111,96.0123,short_yardage,49.1273,goal_to_go,20.8266
-2025,LV,13,33.6152,43.3354,17.0911,29.4971,28.7341,90.6494,trailing_one_score,52.6172,fourth_down,20.0508
+profile_season,team,scored_situations,overall_coach_dna_score,tendency_signal_score_avg,efficiency_signal_score_avg,explosiveness_signal_score_avg,stability_signal_score_avg,sample_reliability_score_avg,top_signal_situation,top_signal_field_zone,top_signal_context,top_signal_score,lowest_signal_situation,lowest_signal_field_zone,lowest_signal_context,lowest_signal_score
+2025,LA,45,56.294,62.4652,72.6318,65.3343,62.281,73.6662,neutral_early_down,fringe,neutral_early_down | fringe,80.625,two_minute_game,own_territory,two_minute_game | own_territory,17.2246
+2025,BUF,45,53.1461,63.8664,63.7499,62.2197,47.138,72.1871,leading_early_down,own_territory,leading_early_down | own_territory,83.5156,tied_early_down,backed_up,tied_early_down | backed_up,16.5801
+2025,WAS,45,51.9778,73.1083,52.7241,59.8365,47.8622,69.8413,neutral_early_down,own_territory,neutral_early_down | own_territory,83.3984,two_minute_game,red_zone,two_minute_game | red_zone,23.4113
+2025,CIN,46,50.8784,64.2256,60.0367,47.1958,53.3315,73.8247,trailing_one_score,fringe,trailing_one_score | fringe,71.6406,two_minute_game,backed_up,two_minute_game | backed_up,17.9487
+2025,BAL,45,49.1322,61.2633,54.7651,63.6064,35.2844,71.8062,neutral_early_down,fringe,neutral_early_down | fringe,77.4219,trailing_early_down,backed_up,trailing_early_down | backed_up,11.8242
+2025,NE,45,49.0881,49.5704,68.2048,63.1267,44.2766,75.1637,leading_one_score,fringe,leading_one_score | fringe,66.8164,fourth_down,own_territory,fourth_down | own_territory,14.7419
+2025,CHI,45,48.8438,50.1781,59.5375,61.3148,65.6443,74.745,trailing_one_score,own_territory,trailing_one_score | own_territory,68.3203,two_minute_half,backed_up,two_minute_half | backed_up,12.8468
+2025,SF,45,48.3072,55.0335,60.0075,47.305,57.9523,74.223,neutral_early_down,own_territory,neutral_early_down | own_territory,75.7227,fourth_down,own_territory,fourth_down | own_territory,11.9093
+2025,SEA,44,47.6358,58.7242,56.5951,53.5932,47.8587,70.4528,third_down,own_territory,third_down | own_territory,70.9242,two_minute_half,red_zone,two_minute_half | red_zone,14.1875
+2025,DET,43,46.0869,49.1242,58.7184,56.784,55.7656,73.5606,leading_early_down,own_territory,leading_early_down | own_territory,68.3594,fourth_down,own_territory,fourth_down | own_territory,18.4718
+2025,NYG,45,45.9345,58.1643,45.7635,53.7544,47.6149,74.4339,neutral_early_down,fringe,neutral_early_down | fringe,65.7812,two_minute_game,red_zone,two_minute_game | red_zone,14.873
+2025,KC,45,45.2844,57.0684,50.3157,46.6206,49.7716,72.5941,neutral_early_down,own_territory,neutral_early_down | own_territory,65.5078,short_yardage,backed_up,short_yardage | backed_up,19.2581
+2025,PHI,45,45.2138,52.7897,50.9003,52.8124,56.7988,71.8639,trailing_early_down,own_territory,trailing_early_down | own_territory,80.1172,short_yardage,backed_up,short_yardage | backed_up,18.7843
+2025,GB,44,45.0021,42.6198,60.8803,65.198,53.8024,72.9412,leading_one_score,fringe,leading_one_score | fringe,65.1586,two_minute_game,own_territory,two_minute_game | own_territory,15.0117
+2025,IND,45,44.4739,43.8259,62.7079,56.4055,50.3665,73.0946,leading_early_down,fringe,leading_early_down | fringe,63.4008,two_minute_game,fringe,two_minute_game | fringe,13.5625
+2025,JAX,44,44.378,47.3177,56.0277,56.6571,59.3191,72.0821,neutral_early_down,fringe,neutral_early_down | fringe,65.5078,tied_early_down,backed_up,tied_early_down | backed_up,17.791
+2025,ATL,45,44.3018,49.47,50.3672,54.114,63.3936,73.5813,trailing_early_down,own_territory,trailing_early_down | own_territory,74.8047,fourth_down,fringe,fourth_down | fringe,17.2051
+2025,DAL,46,44.1398,43.2549,62.0584,56.0189,57.2419,72.3803,two_minute_half,fringe,two_minute_half | fringe,61.0957,two_minute_game,red_zone,two_minute_game | red_zone,14.6815
+2025,MIA,46,42.6222,48.1395,53.39,54.1401,51.028,68.4922,neutral_early_down,fringe,neutral_early_down | fringe,70.7031,two_minute_game,fringe,two_minute_game | fringe,13.0342
+2025,ARI,46,41.2579,51.8491,45.3254,48.584,45.5868,70.6065,trailing_early_down,red_zone,trailing_early_down | red_zone,65.9672,short_yardage,backed_up,short_yardage | backed_up,14.5302
+2025,TB,45,40.917,43.2342,49.0508,46.0714,56.7684,74.7653,trailing_one_score,fringe,trailing_one_score | fringe,59.4141,fourth_down,fringe,fourth_down | fringe,11.5508
+2025,DEN,45,40.0201,39.5102,50.1554,50.1454,69.7213,72.9441,trailing_early_down,red_zone,trailing_early_down | red_zone,64.9477,short_yardage,backed_up,short_yardage | backed_up,16.8488
+2025,CAR,45,39.8156,50.9468,41.6961,42.6072,51.5844,72.0006,neutral_early_down,own_territory,neutral_early_down | own_territory,60.8594,leading_early_down,red_zone,leading_early_down | red_zone,14.9004
+2025,MIN,45,39.616,50.7574,43.6704,53.7345,31.8954,69.9167,neutral_early_down,fringe,neutral_early_down | fringe,58.3984,fourth_down,own_territory,fourth_down | own_territory,13.7238
+2025,HOU,45,39.5336,45.3997,40.5529,43.2687,61.9362,73.4961,trailing_early_down,own_territory,trailing_early_down | own_territory,66.4844,goal_line,red_zone,goal_line | red_zone,16.0078
+2025,NO,45,39.4741,52.8836,39.3238,41.5848,44.9186,71.1295,red_zone,red_zone,red_zone | red_zone,60.1313,goal_line,red_zone,goal_line | red_zone,14.793
+2025,LAC,45,38.705,42.9107,47.6455,45.2539,40.1257,74.3923,trailing_early_down,fringe,trailing_early_down | fringe,63.125,goal_line,red_zone,goal_line | red_zone,16.5703
+2025,PIT,44,37.9531,37.1086,52.7544,43.6141,57.7443,73.079,leading_early_down,own_territory,leading_early_down | own_territory,58.3984,tied_early_down,backed_up,tied_early_down | backed_up,17.293
+2025,NYJ,46,36.3375,53.6502,33.8928,35.9596,40.7223,68.3205,tied_early_down,own_territory,tied_early_down | own_territory,60.9223,two_minute_game,own_territory,two_minute_game | own_territory,15.5254
+2025,TEN,46,35.678,47.4456,34.8692,37.5952,49.2146,70.2733,leading_one_score,own_territory,leading_one_score | own_territory,55.0512,two_minute_half,backed_up,two_minute_half | backed_up,14.7218
+2025,LV,46,32.989,46.0551,33.1972,38.6016,37.8637,68.643,trailing_early_down,red_zone,trailing_early_down | red_zone,55.7367,tied_early_down,red_zone,tied_early_down | red_zone,15.1934
+2025,CLE,45,32.43,40.7636,28.1559,37.6436,47.6155,72.2671,tied_early_down,fringe,tied_early_down | fringe,51.1934,trailing_one_score,backed_up,trailing_one_score | backed_up,11.5996

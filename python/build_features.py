@@ -1,31 +1,32 @@
 from __future__ import annotations
 
-from typing import List
-
-import numpy as np
 import pandas as pd
 
 from config import (
     BASELINE_END_SEASON,
     BASELINE_START_SEASON,
+    LEAGUE_BASELINE_TABLE,
     OUTPUT_TABLES_DIR,
     PROCESSED_DATA_DIR,
     PROFILE_SEASON,
+    TEAM_PROFILE_TABLE,
     ensure_output_dirs,
 )
-from load_data import load_league_baselines, load_team_profiles
+from load_data import load_sql_query
 
 
 # =========================================================
-# FEATURE SETTINGS
+# HELPERS
 # =========================================================
 
-RATE_METRICS: List[str] = [
+DELTA_METRICS = [
     "dropback_rate",
     "rush_rate",
     "pass_attempt_rate",
     "shotgun_rate",
     "no_huddle_rate",
+    "avg_yards_gained",
+    "avg_epa",
     "success_rate",
     "first_down_rate",
     "touchdown_rate",
@@ -36,209 +37,139 @@ RATE_METRICS: List[str] = [
     "explosive_run_rate",
 ]
 
-VALUE_METRICS: List[str] = [
-    "avg_yards_gained",
-    "avg_epa",
-]
 
-ALL_METRICS: List[str] = RATE_METRICS + VALUE_METRICS
+def build_context_label(situation_name: str, field_zone: str) -> str:
+    return f"{situation_name} | {field_zone}"
+
+
+def load_team_profiles() -> pd.DataFrame:
+    query = f"""
+    SELECT *
+    FROM {TEAM_PROFILE_TABLE}
+    ORDER BY team, situation_order, field_zone_order
+    """
+    return load_sql_query(query)
+
+
+def load_league_baselines() -> pd.DataFrame:
+    query = f"""
+    SELECT *
+    FROM {LEAGUE_BASELINE_TABLE}
+    ORDER BY situation_order, field_zone_order
+    """
+    return load_sql_query(query)
 
 
 # =========================================================
-# CORE HELPERS
+# FEATURE BUILD
 # =========================================================
-
-def safe_pct_delta(team_value: pd.Series, baseline_value: pd.Series) -> pd.Series:
-    """
-    Calculate a safe percentage delta:
-    (team - baseline) / abs(baseline)
-
-    Returns NaN when the baseline is 0 or null.
-    """
-    baseline_abs = baseline_value.abs()
-    return np.where(
-        (baseline_abs > 0) & baseline_value.notna() & team_value.notna(),
-        (team_value - baseline_value) / baseline_abs,
-        np.nan,
-    )
-
 
 def build_team_baseline_features() -> pd.DataFrame:
     """
-    Build a team-vs-baseline comparison table by situation.
+    Build the team-vs-baseline feature table at the
+    team + situation + field_zone grain.
     """
-    team_profiles = load_team_profiles()
-    league_baselines = load_league_baselines()
+    team_profiles = load_team_profiles().copy()
+    baselines = load_league_baselines().copy()
 
-    baseline_cols = [
-        "situation_name",
-        "baseline_type",
-        "baseline_start_season",
-        "baseline_end_season",
-        "season_count",
-        "team_count",
-        "team_season_count",
-        "baseline_quality",
-    ] + ALL_METRICS
-
-    baseline_df = league_baselines[baseline_cols].copy()
-
-    features = team_profiles.merge(
-        baseline_df,
-        on="situation_name",
+    merged = team_profiles.merge(
+        baselines,
+        on=["situation_name", "field_zone"],
         how="left",
         suffixes=("_team", "_baseline"),
     )
 
-    # -----------------------------------------------------
-    # Absolute deltas
-    # -----------------------------------------------------
-    for metric in ALL_METRICS:
-        features[f"{metric}_delta"] = (
-            features[f"{metric}_team"] - features[f"{metric}_baseline"]
-        )
+    merged["situation_order"] = merged["situation_order_team"]
+    merged["field_zone_order"] = merged["field_zone_order_team"]
 
-    # -----------------------------------------------------
-    # Relative deltas
-    # -----------------------------------------------------
-    for metric in ALL_METRICS:
-        features[f"{metric}_pct_delta"] = safe_pct_delta(
-            features[f"{metric}_team"],
-            features[f"{metric}_baseline"],
-        )
-
-    # -----------------------------------------------------
-    # Direction flags
-    # -----------------------------------------------------
-    features["is_more_dropback_heavy"] = (
-        features["dropback_rate_delta"] > 0
-    ).astype(int)
-
-    features["is_more_run_heavy"] = (
-        features["rush_rate_delta"] > 0
-    ).astype(int)
-
-    features["is_more_shotgun_heavy"] = (
-        features["shotgun_rate_delta"] > 0
-    ).astype(int)
-
-    features["is_more_no_huddle_heavy"] = (
-        features["no_huddle_rate_delta"] > 0
-    ).astype(int)
-
-    features["is_more_efficient_epa"] = (
-        features["avg_epa_delta"] > 0
-    ).astype(int)
-
-    features["is_more_successful"] = (
-        features["success_rate_delta"] > 0
-    ).astype(int)
-
-    features["is_more_explosive"] = (
-        features["explosive_play_rate_delta"] > 0
-    ).astype(int)
-
-    # -----------------------------------------------------
-    # Sample metadata
-    # -----------------------------------------------------
-    features["sample_vs_baseline_context"] = np.where(
-        features["play_count"] >= 100,
-        "stable_team_sample",
-        np.where(features["play_count"] >= 50, "usable_team_sample", "small_team_sample"),
+    merged["situation_field_zone_context"] = merged.apply(
+        lambda row: build_context_label(row["situation_name"], row["field_zone"]),
+        axis=1,
     )
 
-    features["meets_strong_team_sample"] = (features["play_count"] >= 100).astype(int)
-    features["meets_usable_team_sample"] = (features["play_count"] >= 50).astype(int)
+    merged["team_play_count"] = merged["play_count_team"]
+    merged["baseline_play_count"] = merged["play_count_baseline"]
 
-    # -----------------------------------------------------
-    # Naming cleanup for clarity
-    # -----------------------------------------------------
-    rename_map = {
-        "play_count": "team_play_count",
-        "sample_quality": "team_sample_quality",
-        "meets_min_sample_50": "team_meets_min_sample_50",
-        "meets_min_sample_20": "team_meets_min_sample_20",
-    }
-    features = features.rename(columns=rename_map)
+    merged["team_sample_quality"] = merged["sample_quality"]
+    merged["sample_vs_baseline_context"] = (
+        merged["team_sample_quality"].fillna("unknown")
+        + "_team_sample_vs_"
+        + merged["baseline_quality"].fillna("unknown")
+        + "_baseline"
+    )
 
-    # -----------------------------------------------------
-    # Ordering
-    # -----------------------------------------------------
+    for metric in DELTA_METRICS:
+        merged[f"{metric}_delta"] = (
+            merged[f"{metric}_team"] - merged[f"{metric}_baseline"]
+        )
+
     ordered_cols = [
         "profile_season",
-        "team",
-        "situation_order",
-        "situation_name",
         "baseline_type",
         "baseline_start_season",
         "baseline_end_season",
+        "team",
+        "situation_order",
+        "situation_name",
+        "field_zone_order",
+        "field_zone",
+        "situation_field_zone_context",
+        "team_play_count",
+        "baseline_play_count",
         "season_count",
         "team_count",
         "team_season_count",
-        "baseline_quality",
-        "team_play_count",
         "team_sample_quality",
+        "baseline_quality",
         "sample_vs_baseline_context",
-        "team_meets_min_sample_50",
-        "team_meets_min_sample_20",
-        "meets_strong_team_sample",
-        "meets_usable_team_sample",
+        "meets_min_sample_50",
+        "meets_min_sample_20",
     ]
 
-    metric_pairs = []
-    for metric in ALL_METRICS:
-        metric_pairs.extend(
+    metric_cols = []
+    for metric in DELTA_METRICS:
+        metric_cols.extend(
             [
                 f"{metric}_team",
                 f"{metric}_baseline",
                 f"{metric}_delta",
-                f"{metric}_pct_delta",
             ]
         )
 
-    behavior_flags = [
-        "is_more_dropback_heavy",
-        "is_more_run_heavy",
-        "is_more_shotgun_heavy",
-        "is_more_no_huddle_heavy",
-        "is_more_efficient_epa",
-        "is_more_successful",
-        "is_more_explosive",
-    ]
+    features = merged[ordered_cols + metric_cols].copy()
 
-    features = features[ordered_cols + metric_pairs + behavior_flags].copy()
-    features = features.sort_values(["team", "situation_order"]).reset_index(drop=True)
+    features = features.sort_values(
+        ["team", "situation_order", "field_zone_order"]
+    ).reset_index(drop=True)
 
     return features
 
 
-def export_team_baseline_features(df: pd.DataFrame) -> None:
-    """
-    Save the feature table to project output locations.
-    """
+# =========================================================
+# EXPORT
+# =========================================================
+
+def export_team_baseline_features(features: pd.DataFrame) -> None:
     ensure_output_dirs()
 
-    processed_path = (
-        PROCESSED_DATA_DIR
-        / f"team_baseline_features_{PROFILE_SEASON}_vs_{BASELINE_START_SEASON}_{BASELINE_END_SEASON}.csv"
-    )
-    output_path = (
-        OUTPUT_TABLES_DIR
-        / f"team_baseline_features_{PROFILE_SEASON}_vs_{BASELINE_START_SEASON}_{BASELINE_END_SEASON}.csv"
-    )
+    filename = f"team_baseline_features_{PROFILE_SEASON}_vs_{BASELINE_START_SEASON}_{BASELINE_END_SEASON}.csv"
 
-    df.to_csv(processed_path, index=False)
-    df.to_csv(output_path, index=False)
+    processed_path = PROCESSED_DATA_DIR / filename
+    output_path = OUTPUT_TABLES_DIR / filename
+
+    features.to_csv(processed_path, index=False)
+    features.to_csv(output_path, index=False)
 
     print("\nSaved files:")
     print(processed_path)
     print(output_path)
 
 
+# =========================================================
+# SMOKE TEST
+# =========================================================
+
 def smoke_test() -> None:
-    """
-    Build the team-vs-baseline feature table and print a quick summary.
-    """
     features = build_team_baseline_features()
 
     print("\nteam_baseline_features")
@@ -246,21 +177,25 @@ def smoke_test() -> None:
     print(f"columns: {len(features.columns)}")
 
     print("\nSample rows:")
-    preview_cols = [
-        "team",
-        "situation_name",
-        "team_play_count",
-        "dropback_rate_team",
-        "dropback_rate_baseline",
-        "dropback_rate_delta",
-        "avg_epa_team",
-        "avg_epa_baseline",
-        "avg_epa_delta",
-        "success_rate_team",
-        "success_rate_baseline",
-        "success_rate_delta",
-    ]
-    print(features[preview_cols].head(10))
+    print(
+        features[
+            [
+                "team",
+                "situation_name",
+                "field_zone",
+                "team_play_count",
+                "dropback_rate_team",
+                "dropback_rate_baseline",
+                "dropback_rate_delta",
+                "avg_epa_team",
+                "avg_epa_baseline",
+                "avg_epa_delta",
+                "success_rate_team",
+                "success_rate_baseline",
+                "success_rate_delta",
+            ]
+        ].head(12)
+    )
 
     print("\nBUF sample:")
     print(
@@ -269,6 +204,7 @@ def smoke_test() -> None:
             [
                 "team",
                 "situation_name",
+                "field_zone",
                 "team_play_count",
                 "dropback_rate_delta",
                 "rush_rate_delta",
@@ -276,7 +212,7 @@ def smoke_test() -> None:
                 "success_rate_delta",
                 "explosive_play_rate_delta",
             ],
-        ].head(10)
+        ].head(12)
     )
 
     export_team_baseline_features(features)

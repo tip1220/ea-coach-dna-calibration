@@ -40,6 +40,11 @@ LEAGUE_BASELINE_TABLE = "league_offense_baselines_2023_2025"
 CLEAN_PLAY_TABLE = "clean_pbp"
 RAW_PLAY_TABLE = "raw_pbp"
 
+
+# =========================================================
+# SITUATION + FIELD-ZONE ORDERING
+# =========================================================
+
 SITUATION_ORDER = [
     "all_offense",
     "early_down",
@@ -48,6 +53,7 @@ SITUATION_ORDER = [
     "short_yardage",
     "red_zone",
     "goal_to_go",
+    "goal_line",
     "two_minute_half",
     "two_minute_game",
     "one_score",
@@ -63,6 +69,33 @@ SITUATION_ORDER = [
     "leading_early_down",
     "trailing_early_down",
 ]
+
+SITUATION_ORDER_MAP = {
+    situation_name: idx + 1
+    for idx, situation_name in enumerate(SITUATION_ORDER)
+}
+
+FIELD_ZONE_ORDER = [
+    "backed_up",
+    "own_territory",
+    "fringe",
+    "red_zone",
+]
+
+FIELD_ZONE_ORDER_MAP = {
+    field_zone: idx + 1
+    for idx, field_zone in enumerate(FIELD_ZONE_ORDER)
+}
+
+
+# =========================================================
+# PRESENTATION / EXPORT SETTINGS
+# =========================================================
+
+AVG_TEAM_PLAY_COUNT_DISPLAY_DECIMALS = 1
+RATE_DISPLAY_DECIMALS = 4
+VALUE_DISPLAY_DECIMALS = 4
+SUMMARY_SCORE_DISPLAY_DECIMALS = 4
 
 
 # =========================================================
@@ -109,6 +142,10 @@ def project_summary() -> dict:
         "database": MYSQL_CONFIG.database,
         "team_profile_table": TEAM_PROFILE_TABLE,
         "league_baseline_table": LEAGUE_BASELINE_TABLE,
+        "situation_count": len(SITUATION_ORDER),
+        "field_zone_count": len(FIELD_ZONE_ORDER),
+        "situation_order": SITUATION_ORDER,
+        "field_zone_order": FIELD_ZONE_ORDER,
     }
 
 
