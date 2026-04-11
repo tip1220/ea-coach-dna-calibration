@@ -1,109 +1,101 @@
 # Coach DNA Calibration Lab
 
 ## Overview
-Coach DNA Calibration Lab is a SQL and Python portfolio project built to translate real NFL offensive behavior into a benchmarking framework for football gameplay authenticity.
+I built this project to study how real NFL offenses behave in context and turn that into a coach-logic benchmark a football studio could use.
 
-The project uses NFL play-by-play data to answer a studio-relevant question: how should team-specific coaching tendencies show up in football decision logic if the goal is to make teams feel more distinct, believable, and situationally authentic?
+The core question was pretty straightforward: if real teams call games differently depending on score, down, distance, clock, and field position, how should that show up in football decision logic?
 
-This is **not** an audit of EA Sports logic, and it does not claim to measure internal game behavior. Instead, it builds an external benchmark from real NFL data that could support design conversations around coach logic, situational aggression, playcalling identity, tempo, and late-game behavior.
+I used NFL play-by-play, MySQL, and Python to build the project from raw files up through cleaned tables, team profiles, league baselines, feature engineering, scoring, and export tables.
 
-The upgraded version of the project measures behavior at the **situation + field-zone** level, which makes the model more useful for CPU-controlled coaching logic. It no longer stops at broad situations like “early down” or “trailing.” It now asks how teams behave in those situations depending on where the ball is on the field.
-
----
+I’m not auditing EA Sports. I don’t have internal gameplay logic, telemetry, or tuning rules. This is an outside benchmark built from real football behavior.
 
 ## Business Question
-How can real NFL situational decision-making be translated into a structured benchmark for more authentic football coach logic?
+How can real NFL offensive decision-making be translated into a structured benchmark for more authentic football coach logic?
 
----
+## Why I Built It
+Football games can look good and still feel off if every team calls situations too similarly.
 
-## Why This Project Matters
-Football realism is not just about ratings, rosters, or animations. It is also about behavior.
-
-Teams do not all act the same when they are:
+I’m talking about spots like:
+- short yardage
+- third down
+- fourth down
+- two-minute situations
+- red-zone drives
 - protecting a lead
 - chasing points
-- facing short yardage
-- operating in the red zone
-- playing on third or fourth down
-- managing two-minute situations
-- working backed up, in own territory, in fringe space, or in compressed scoring space
+- backed-up possessions
+- fringe territory
+- goal-to-go and goal-line plays
 
-If every team behaves too similarly in these moments, the game can lose one of the things that makes football feel real: coaching identity.
+Those moments are where coaching personality shows up. If that layer gets flattened, teams start feeling the same even when the uniforms and ratings are different.
 
-This project focuses on that layer.
-
----
+That’s what I wanted to work on.
 
 ## Project Framing
-This project is designed as a **benchmarking framework**, not a direct product audit.
+This project is a benchmark, not a product audit.
 
-I do **not** have access to:
+I don’t have access to:
 - internal EA telemetry
-- internal gameplay logic
-- private tuning rules
+- internal coach-logic rules
+- private tuning values
 - proprietary simulation data
 
-Because of that, all recommendations and takeaways should be interpreted as:
-- benchmark guidance from real NFL behavior
-- evidence for how teams differ by situation and field position
-- inputs that could help shape more authentic coach logic
+So I’m not making claims about how any specific football game works under the hood.
 
-Not as unsupported claims about any specific game system.
-
----
+What I am doing is building a clean, outside reference point from real NFL behavior. That can help frame better design questions around coach logic, situational aggression, tempo, and playcalling identity.
 
 ## Scope
-This project uses the following scope:
 
-- **2025** NFL play-by-play for team profiles
-- **2023–2025** NFL play-by-play for league baselines
-- **team-season** as the main analytical unit for profiles
-- **situation + field-zone** as the main behavioral grain
-- **SQL + Python only**
-- **no dashboarding layer** for the core project
+### Data window
+- 2025 NFL play-by-play for team profiles
+- 2023–2025 NFL play-by-play for league baselines
 
-### In Scope
-- situational offensive behavior
-- field-zone-aware tendency profiling
-- compressed-field scoring contexts
+### Main profile grain
+- team-season for team identity
+- situation + field zone for behavioral context
+
+### Tools
+- MySQL
+- Python
+- pandas
+- Git / GitHub
+
+### In scope
+- offensive situation profiling
+- field-zone-aware behavior modeling
 - league baseline construction
-- team-vs-baseline comparisons
+- team-vs-baseline deltas
 - Coach DNA scoring
-- exported recruiter-ready tables
+- ranked export tables
 
-### Out of Scope
+### Out of scope
+- defensive profiling in this version
+- dashboards as the main deliverable
 - internal game telemetry
 - synthetic gameplay data
 - proprietary tracking data
-- cross-sport expansion
-- defensive profiling in this first version
 
----
+## What Changed During the Project
+The first version of the model was built around the usual football buckets:
+- down
+- distance
+- score state
+- clock
 
-## Why Field Zones Were Added
-The first pass of the project showed that down, distance, score state, and clock all mattered when profiling offensive behavior.
+That got me part of the way there. The outputs were useful. They still felt too broad.
 
-But that first pass still missed one of the biggest drivers of real football decision-making: **field position**.
+Once I started reading through the tables, I could see the model was blending together football situations that weren’t really the same. A team backed up at its own 8 and that same team operating at the opponent’s 35 might both sit inside a broad situation label, but they are dealing with two different problems.
 
-A team backed up in minus territory should not behave the same way it behaves:
-- in own territory
-- in fringe space
-- inside the red zone
-- inside goal-to-go or goal-line space
+So I rebuilt the project around **situation + field zone**.
 
-Adding field zones made the model more realistic because it now evaluates coaching behavior at the exact context where decisions happen.
+That changed the SQL views, the profile tables, the baseline tables, the feature engineering, the scoring layer, and the notebook analysis. It was more rework than I wanted, but it cleaned the logic up.
 
-That upgrade makes the project more useful for CPU-controlled coaching logic because it helps answer not just:
-- what does this team do in this situation?
+The numbers got sharper after that. The outputs started sounding more like football.
 
-but:
-- what does this team do in this situation, in this part of the field?
+## Field Zones
+I carried field position alongside the major situations so I could stop flattening different parts of the field into the same bucket.
 
----
-
-## Field-Zone Definitions
-The upgraded model carries field position alongside each major situation.
-
+### Core field zones
 - **backed_up**
   - `yardline_100 > 80`
   - roughly minus 1 to minus 19
@@ -120,14 +112,13 @@ The upgraded model carries field position alongside each major situation.
   - `yardline_100 <= 20`
   - plus 20 and in
 
-The model also separates compressed scoring space into:
+### Compressed scoring splits
+I also broke scoring territory into three tighter buckets:
 - **red_zone**: plus 20 to plus 11
 - **goal_to_go**: plus 10 to plus 3
 - **goal_line**: plus 2 to the end zone
 
-That matters because those are different football environments, and CPU coach logic should not treat them as one blended bucket.
-
----
+That helped a lot. A broad red-zone bucket was hiding too much. Once I split those spaces out, the model started surfacing behavior that felt more like real coaching tendencies instead of generic offense.
 
 ## Data Source
 This project uses public NFL play-by-play data from **nflverse**.
@@ -137,65 +128,75 @@ Raw files loaded:
 - `pbp_2024.csv`
 - `pbp_2025.csv`
 
----
+## How I Built It
 
-## Analytical Approach
-The project follows a layered pipeline:
+### 1. Raw staging
+I loaded the nflverse CSVs into MySQL and kept source metadata attached so I could trace rows back to season and file.
 
-1. **Raw staging**
-   - Load nflverse CSVs into MySQL
-   - Preserve season and file metadata for reproducibility
+### 2. Clean play universe
+I filtered the data down to real offensive decision plays. I removed kneels, spikes, special teams, and other rows that would muddy the behavior model.
 
-2. **Clean play universe**
-   - Filter to real offensive decision plays
-   - Remove special teams, kneels, spikes, and non-core rows
-   - Create reusable flags for game state, distance, and field position
+### 3. Situation views
+I built reusable play-level views for:
+- early down
+- third down
+- fourth down
+- short yardage
+- red zone
+- goal to go
+- goal line
+- two-minute half
+- two-minute game
+- tied / leading / trailing
+- one-score and two-plus-score game states
 
-3. **Situational views**
-   - Build reusable play-level views for:
-     - early down
-     - third down
-     - fourth down
-     - short yardage
-     - red zone
-     - goal to go
-     - goal line
-     - two-minute situations
-     - tied / leading / trailing states
-     - one-score and two-plus-score contexts
+### 4. Team profiles
+I built 2025 offensive profiles at the **team + situation + field-zone** level.
 
-4. **2025 team profiles**
-   - Build team-by-situation-by-field-zone offensive profiles
-   - Measure tendency, efficiency, explosiveness, and stability
+### 5. League baselines
+I built 2023–2025 league baselines at that same grain so the comparisons would stay clean.
 
-5. **2023–2025 league baselines**
-   - Build the comparison benchmark for each situation + field-zone context
-   - Keep the metric structure aligned to team profiles
+### 6. Feature engineering
+I calculated team-vs-baseline deltas for:
+- run/dropback tendency
+- shotgun usage
+- tempo
+- EPA
+- success rate
+- explosiveness
+- sack rate
+- turnover rate
 
-6. **Feature engineering**
-   - Calculate team-vs-baseline deltas
-   - Build reusable comparison tables for downstream scoring
+### 7. Coach DNA scoring
+I built a scoring layer that combines:
+- tendency distinctiveness
+- efficiency
+- explosiveness
+- stability
+- sample reliability
 
-7. **Coach DNA scoring**
-   - Create situation-level and team-level scores
-   - Combine tendency distinctiveness with efficiency and sample reliability
+### 8. Export layer
+I packaged the outputs into ranked tables so the project is easier to review without opening every notebook or script first.
 
-8. **Export layer**
-   - Produce ranked summary tables
-   - Package outputs for portfolio review, screenshots, and GitHub presentation
+## Technical Hurdles I Had To Fix
+The biggest issue showed up after I upgraded the model grain.
 
----
+Before field zones, joining team profiles to league baselines by situation was enough. After I added field zones, that join logic broke. The feature table started overmatching and the row counts ballooned. I caught it by checking expected row totals and seeing the table come back much larger than it should have.
+
+The fix was to join on both `situation_name` and `field_zone`, then rebuild the feature layer and everything after it.
+
+I also had to stay honest about sample size. Some contexts are naturally thin. Fourth down backed up is never going to have the same volume as early down in own territory. I built sample-quality flags and reliability weighting into the score so the model wouldn’t treat every context like it deserved the same confidence.
 
 ## Core Tables and Outputs
 
-### SQL Layer
+### SQL layer
 - `raw_pbp`
 - `clean_pbp`
-- situational views (`vw_sit_*`)
+- situation views (`vw_sit_*`)
 - `team_offense_profiles_2025`
 - `league_offense_baselines_2023_2025`
 
-### Python Layer
+### Python layer
 - `team_baseline_features_2025_vs_2023_2025.csv`
 - `coach_dna_situation_scores_2025.csv`
 - `coach_dna_team_summary_2025.csv`
@@ -205,16 +206,14 @@ The project follows a layered pipeline:
 - `coach_dna_situation_strength_summary_2025.csv`
 - `coach_dna_team_summary_presentation_2025.csv`
 
----
-
-## Current Output Themes
-The current scoring framework captures several useful dimensions of team identity:
+## What The Model Scores
+I didn’t want a mystery number with no guts behind it, so I split the score into parts.
 
 - **Tendency signal**
-  - how far a team’s behavior moves away from league baseline
+  - how far a team moves from league expectation
 
 - **Efficiency signal**
-  - whether that behavior actually outperforms the baseline
+  - whether that behavior beats the baseline
 
 - **Explosiveness signal**
   - whether the offense creates chunk plays above baseline
@@ -223,100 +222,91 @@ The current scoring framework captures several useful dimensions of team identit
   - whether sacks and turnovers stay under control
 
 - **Sample reliability**
-  - whether the situation sample is strong enough to trust
+  - whether the context has enough volume to trust
 
----
+That kept the score from rewarding style by itself. I wanted the model to care about whether the difference was real, whether it was productive, and whether I had enough sample to believe it.
 
-## Key Findings
+## What The Numbers Started Showing
 
-### 1. Field position materially improved the model
-Some of the strongest average separation across teams appears in contexts like:
+### 1. Field position sharpened the model fast
+Some of the strongest average separation across teams showed up in places like:
 - `all_offense | own_territory`
 - `all_offense | fringe`
 - `early_down | own_territory`
 
-That supports the field-zone upgrade. Coaching identity does not just change by game situation. It changes by where the ball is on the field.
+That was one of the first signs the rebuild was worth it.
 
-### 2. The model now surfaces team identity at the exact context where decisions happen
-The upgraded model no longer stops at broad situations like:
-- early down
-- trailing
-- red zone
+### 2. Team identity started showing up in real football space
+Once I pushed the model to situation + field zone, the outputs got more specific.
 
-It now identifies team behavior at the **situation + field-zone** level, which is much closer to the kind of logic a game studio would need for more authentic CPU-controlled coaches.
+The questions got better too:
+- who gets more run-heavy in own territory?
+- who stays aggressive in fringe space?
+- who changes tempo when trailing in scoring territory?
+- who tightens up near the goal line?
+- who looks different in compressed field space and still performs well?
 
-### 3. Buffalo emerged as one of the strongest overall offensive Coach DNA signals
-In the upgraded 2025 rankings, Buffalo finished near the top of the model and showed one of its clearest signals in:
+That’s more useful for coach-logic work than broad labels by themselves.
+
+### 3. Buffalo surfaced near the top
+Buffalo finished near the top of the 2025 offensive Coach DNA ranking and showed one of its clearest signals in:
 - `leading_early_down | own_territory`
 
-That suggests Buffalo should not inherit a generic league-average early-down CPU profile in that context.
+That gives me a concrete place where the team should probably feel different from a default CPU profile.
 
-### 4. Splitting scoring territory into red zone, goal to go, and goal line improved football realism
-The project now treats these as separate environments:
-- `red_zone`: plus 20 to plus 11
-- `goal_to_go`: plus 10 to plus 3
-- `goal_line`: plus 2 to the end zone
+### 4. Splitting scoring space helped
+Breaking scoring territory into:
+- red zone
+- goal to go
+- goal line
 
-That matters because those are not the same playcalling environments, and CPU coaching logic should not treat them as one blended bucket.
+cleaned up the model. Those aren’t the same football environments, so I didn’t want them blended into one bucket.
 
-### 5. The strongest tuning opportunities are the contexts with both strong separation and strong sample
-The best candidates for CPU coach tuning are the places where:
-- teams differ clearly from baseline
-- the behavior appears stable
-- the sample is large enough to trust
+### 5. The best tuning candidates combine strong signal and real sample
+Some contexts looked interesting but thin. Others had both separation and volume. That second group is where I’d start if I were using this as a gameplay benchmark.
 
-That gives the project more practical design value. It does not just show difference. It helps point to **where the difference is safest to tune around**.
-
----
-
-## Example Business Questions This Project Can Answer
+## Example Questions This Project Can Answer
 - Which teams have the strongest offensive coaching DNA in 2025?
-- Which field-zone contexts create the strongest separation across teams?
+- Which field-zone contexts separate teams the most?
 - Which teams become more run-heavy than baseline in own territory on early downs?
-- Which teams remain aggressive in fringe or scoring territory when the league tends to tighten up?
-- Which teams show the clearest leading vs. trailing behavior shift by field zone?
-- Which teams have distinctive goal-to-go or goal-line behavior that could improve CPU playcall authenticity?
+- Which teams stay aggressive in fringe or scoring space?
+- Which teams shift most clearly when leading versus trailing?
+- Which teams show distinctive goal-to-go or goal-line behavior?
 
----
-
-## Output Tables Worth Reviewing First
-If you want the fastest path through the project, start here:
+## Tables I’d Review First
+If someone only had a few minutes with the repo, I’d start here:
 
 - `outputs/tables/coach_dna_ranked_team_summary_2025.csv`  
-  Team-level ranking output with top and lowest signal contexts.
+  Team-level ranking with top and lowest signal contexts
 
 - `outputs/tables/coach_dna_ranked_situation_scores_2025.csv`  
-  Ranked team-context combinations across the full upgraded model.
+  Ranked team-context combinations across the full model
 
 - `outputs/tables/coach_dna_top_signal_situations_by_team_2025.csv`  
-  The top 3 strongest contexts for each team.
+  Top 3 strongest contexts for each team
 
 - `outputs/tables/coach_dna_situation_strength_summary_2025.csv`  
-  A league-wide view of which contexts create the strongest average separation.
+  Which contexts create the strongest average separation
 
 - `outputs/tables/coach_dna_team_summary_presentation_2025.csv`  
-  A presentation-friendly version of the team summary ranking.
+  Cleaner presentation-ready team summary output
 
----
+## Why A Football Studio Should Care
+This project gives a cleaner way to talk about coach identity in a game setting.
 
-## Why This Matters for EA Sports
-Football realism is not just about player ratings. It is also about whether teams and coaches behave differently when the game context changes.
-
-This project is useful because it creates a path toward CPU-controlled coaching logic that is:
-- more context-aware
-- more team-specific
-- more faithful to real football behavior
-
-Instead of treating offensive decision-making as one generic league-average profile, the model helps identify where a team should feel different:
+It shows where teams behave differently:
 - by situation
 - by field position
 - by run/pass tendency
 - by tempo
 - by efficiency profile
 
-That makes the project relevant to gameplay authenticity, coach logic tuning, and situational football design.
+That gives a studio something more concrete to work from when thinking about CPU-controlled coach logic.
 
----
+The question I kept building around was simple:
+where should team differences show up so the game feels more like football?
+
+That’s what this project is trying to answer.
 
 ## Repo Structure
 ```text
@@ -355,4 +345,3 @@ ea-coach-dna-calibration/
 └── outputs/
     ├── tables/
     └── figures/
-    
