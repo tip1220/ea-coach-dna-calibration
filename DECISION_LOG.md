@@ -84,3 +84,28 @@ Impact: Python scoring outputs now include situation-level scores, team-level su
 Decision: Keep scoring interpretable rather than over-modeling.
 Reason: The portfolio value comes from clarity, defensibility, and studio relevance, not unnecessary modeling complexity.
 Impact: The first scoring version uses weighted signal components and sample guardrails instead of a black-box model.
+
+## 2026-04-13
+Decision: Add field position as a primary modeling dimension.
+Reason: Broad game situations alone were not separating offensive behavior cleanly enough. Teams behave differently based on where the ball is on the field, even inside the same down, score, and clock context.
+Impact: The model now evaluates offense at the situation + field-zone level instead of only the situation level.
+
+## 2026-04-13
+Decision: Define four core field zones: backed_up, own_territory, fringe, and red_zone.
+Reason: These zones create a cleaner football read on how behavior changes as field position changes.
+Impact: Team profiles and league baselines now carry field-zone context across the model.
+
+## 2026-04-13
+Decision: Split compressed scoring space into red_zone, goal_to_go, and goal_line.
+Reason: Those are different playcalling environments and should not be blended into one generic red-zone bucket.
+Impact: The model now captures more realistic scoring-space behavior and should support better coach-logic interpretation.
+
+## 2026-04-13
+Decision: Align team-to-baseline comparisons on both `situation_name` and `field_zone`.
+Reason: After the field-zone rebuild, joining only on situation caused incorrect matches and inflated feature rows.
+Impact: The feature layer now reflects the intended model grain and supports more reliable scoring outputs.
+
+## 2026-04-13
+Decision: Keep sample reliability as an explicit part of scoring.
+Reason: Some field-zone contexts are naturally thinner than others, and the model should not treat all contexts as equally trustworthy.
+Impact: Stronger-sample contexts carry more influence, while very thin contexts are still visible but weighted more carefully.

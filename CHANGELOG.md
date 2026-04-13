@@ -32,3 +32,16 @@
 - built packaged export tables for ranked team summaries, ranked situation scores, and top signal situations
 - rewrote project documentation to reflect final scope, pipeline, and benchmark framing
 - pushed working SQL and Python pipeline milestones to GitHub
+
+## 2026-04-13
+- rebuilt the model from situation-only to situation + field-zone context
+- added field zones: backed_up, own_territory, fringe, red_zone
+- split compressed scoring space into red_zone, goal_to_go, and goal_line
+- updated `04_situational_views.sql` to support field-zone-aware context logic
+- rebuilt `05_team_profiles.sql` at the team + situation + field-zone level
+- rebuilt `06_baselines.sql` at the situation + field-zone level
+- fixed team-to-baseline join logic so features align on both `situation_name` and `field_zone`
+- regenerated feature, scoring, and export tables after the field-zone rebuild
+- added `coach_dna_situation_strength_summary_2025.csv`
+- updated `README.md` to reflect final project framing, findings, and process
+- rewrote `01_eda.ipynb` and `02_profile_checks.ipynb` markdowns to match the final project voice and upgraded model
